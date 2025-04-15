@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'question.dart';
 import 'api_service.dart';
+import 'package:confetti/confetti.dart';
 
 class QuizScreen extends StatefulWidget {
   const QuizScreen({super.key});
@@ -16,11 +17,19 @@ class QuizScreenState extends State<QuizScreen> {
   bool _loading = true;
   bool _answered = false;
   String _selectedAnswer = "";
+  late ConfettiController _confettiController;
 
   @override
   void initState() {
     super.initState();
+    _confettiController = ConfettiController(duration: const Duration(seconds: 3));
     _loadQuestions();
+  }
+
+  @override
+  void dispose() {
+    _confettiController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadQuestions() async {
@@ -55,6 +64,16 @@ class QuizScreenState extends State<QuizScreen> {
       _answered = false;
       _selectedAnswer = "";
       _currentQuestionIndex++;
+    });
+  }
+
+  void _restartQuiz() {
+    setState(() {
+      _score = 0;
+      _currentQuestionIndex = 0;
+      _answered = false;
+      _selectedAnswer = "";
+      _confettiController.stop();
     });
   }
 
@@ -111,21 +130,83 @@ class QuizScreenState extends State<QuizScreen> {
   }
 
   Widget _buildResultView() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Text(
-            'Quiz Completed!',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+    final percentage = (_score / _questions.length) * 100;
+    String message;
+    
+    if (percentage >= 80) {
+      message = 'Excellent!';
+      _confettiController.play();
+    } else if (percentage >= 60) {
+      message = 'Good job!';
+      _confettiController.play();
+    } else {
+      message = 'Keep practicing!';
+    }
+
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text(
+                'Quiz Completed!',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Your Score: $_score/${_questions.length}',
+                style: const TextStyle(fontSize: 20),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                message,
+                style: TextStyle(
+                  fontSize: 18,
+                  color: percentage >= 60 ? Colors.green : Colors.orange,
+                ),
+              ),
+              const SizedBox(height: 32),
+              ElevatedButton(
+                onPressed: _restartQuiz,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 15),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  textStyle: const TextStyle(fontSize: 18),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    SizedBox(width: 8),
+                    Text('Restart Quiz'),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          Text(
-            'Your Score: $_score/${_questions.length}',
-            style: const TextStyle(fontSize: 20),
+        ),
+        Align(
+          alignment: Alignment.topCenter,
+          child: ConfettiWidget(
+            confettiController: _confettiController,
+            blastDirectionality: BlastDirectionality.explosive,
+            shouldLoop: false,
+            colors: const [
+              Colors.green,
+              Colors.blue,
+              Colors.pink,
+              Colors.orange,
+              Colors.purple
+            ],
+            numberOfParticles: 30,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
