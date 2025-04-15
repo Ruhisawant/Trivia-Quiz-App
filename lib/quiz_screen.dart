@@ -69,13 +69,22 @@ class QuizScreenState extends State<QuizScreen> {
     });
   }
 
-  Widget _buildOptionButton(String option) {
+  void restartQuiz(){
+    setState((){
+      _score = 0; 
+      _currentQuestionIndex = 0; 
+      _answered = false; 
+      _selectedAnswer = '';
+      _feedbackText = '';
+      confetti.stop(); 
+    });
+  }
+
+  Widget _buildOptionButton(String option){
     return ElevatedButton(
       onPressed: _answered ? null : () => _submitAnswer(option),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.blue,
-      ),
-      child: Text(option),
+      style: ElevatedButton.styleFrom(backgroundColor: Colors.blue), 
+      child: Text(option), 
     );
   }
 
@@ -98,9 +107,19 @@ class QuizScreenState extends State<QuizScreen> {
           alignment: Alignment.center, 
           children: [
             Center(
-              child: Text(
-                'Quiz Finished! Your Score: $_score/${_questions.length}', 
-                style: TextStyle(fontSize: 20), 
+              child: Column(
+                mainAxisSize: MainAxisSize.min, 
+                children: [
+                  Text(
+                    'Quiz Finished! Your Score: $_score/${_questions.length}', 
+                    style: TextStyle(fontSize: 20), 
+                  ),
+                  SizedBox(height: 20), 
+                  ElevatedButton(
+                    onPressed: restartQuiz, 
+                    child: Text('Restart Quiz'), 
+                  ),
+                ],
               ),
             ),
             Align(
