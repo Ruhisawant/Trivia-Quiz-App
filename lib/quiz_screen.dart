@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'question.dart';
 import 'api_service.dart';
+import 'package:confetti/confetti.dart'; 
 
 class QuizScreen extends StatefulWidget {
   const QuizScreen({super.key});
@@ -17,11 +18,19 @@ class QuizScreenState extends State<QuizScreen> {
   bool _answered = false;
   String _selectedAnswer = "";
   String _feedbackText = "";
+  late ConfettiController confetti; 
 
   @override
   void initState() {
     super.initState();
+    confetti = ConfettiController(duration: const Duration(seconds: 2)); 
     _loadQuestions();
+  }
+
+  @override
+  void dispose(){
+    confetti.dispose();
+    super.dispose(); 
   }
 
   Future<void> _loadQuestions() async {
@@ -32,9 +41,10 @@ class QuizScreenState extends State<QuizScreen> {
         _loading = false;
       });
     } catch (e) {
-      Text('Failed to load questions.');
+      print('Failed to load questions: $e');
     }
   }
+
   void _submitAnswer(String selectedAnswer) {
     setState(() {
       _answered = true;
@@ -49,6 +59,7 @@ class QuizScreenState extends State<QuizScreen> {
       }
     });
   }
+
   void _nextQuestion() {
     setState(() {
       _answered = false;
@@ -77,9 +88,31 @@ class QuizScreenState extends State<QuizScreen> {
     }
 
     if (_currentQuestionIndex >= _questions.length) {
+      final percentage = (_score / _questions.length) * 100;
+      if (percentage >= 70){
+        confetti.play(); 
+      }
+
       return Scaffold(
-        body: Center(
-          child: Text('Quiz Finished! Your Score: $_score/${_questions.length}'),
+        body: Stack(
+          alignment: Alignment.center, 
+          children: [
+            Center(
+              child: Text(
+                'Quiz Finished! Your Score: $_score/${_questions.length}', 
+                style: TextStyle(fontSize: 20), 
+              ),
+            ),
+            Align(
+              alignment: Alignment.topCenter, 
+              child: ConfettiWidget(
+                confettiController: confetti, 
+                blastDirectionality: BlastDirectionality.explosive,
+                shouldLoop: false, 
+                colors: const [Colors.green, Colors.blue, Colors.pink, Colors.orange, Colors.purple], 
+              ),
+            ),
+          ],
         ),
       );
     }
@@ -103,18 +136,16 @@ class QuizScreenState extends State<QuizScreen> {
               style: TextStyle(fontSize: 18),
             ),
             SizedBox(height: 16),
-            
             ...question.options.map((option) => _buildOptionButton(option)),
             SizedBox(height: 20),
-            
             if (_answered)
               Text(
                 _feedbackText,
                 style: TextStyle(
                   fontSize: 16,
                   color: _selectedAnswer == question.correctAnswer
-                  ? Colors.green
-                  : Colors.red,
+                      ? Colors.green
+                      : Colors.red,
                 ),
               ),
             if (_answered)
